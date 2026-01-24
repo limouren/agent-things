@@ -1,0 +1,9 @@
+{
+  "name": "figma-skill",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "figma-developer-mcp": "^0.6.4"
+  }
+}

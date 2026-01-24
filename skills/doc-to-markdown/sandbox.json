@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "network": {
+    "allowedDomains": [
+      "api.anthropic.com",
+      "*.anthropic.com"
+    ],
+    "deniedDomains": []
+  },
+  "filesystem": {
+    "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg"],
+    "allowWrite": [".", "/tmp"],
+    "denyWrite": [".env", "*.pem", "*.key"]
+  }
+}
