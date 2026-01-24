@@ -10,10 +10,10 @@ Fetch layout, styles, and component data from Figma files. Download images (PNG/
 ## Setup
 
 ```bash
-cd ~/.pi/agent/skills/figma && npm install
+cd {baseDir} && npm install
 ```
 
-Then configure your Figma API key in `~/.pi/agent/skills/figma/config.json`:
+Then configure your Figma API key in `{baseDir}/config.json`:
 
 ```json
 {
@@ -31,13 +31,13 @@ Fetch design data (layout, styles, components) from a Figma file or specific nod
 
 ```bash
 # Get entire file
-~/.pi/agent/skills/figma/get-data.ts <fileKey>
+{baseDir}/get-data.ts <fileKey>
 
 # Get specific node (from URL's node-id parameter)
-~/.pi/agent/skills/figma/get-data.ts <fileKey> --node-id <nodeId>
+{baseDir}/get-data.ts <fileKey> --node-id <nodeId>
 
 # Limit depth of traversal
-~/.pi/agent/skills/figma/get-data.ts <fileKey> --node-id <nodeId> --depth 3
+{baseDir}/get-data.ts <fileKey> --node-id <nodeId> --depth 3
 ```
 
 **Parameters:**
@@ -57,7 +57,7 @@ Fetch design data (layout, styles, components) from a Figma file or specific nod
 Download images (PNG/SVG) from Figma nodes to a local directory.
 
 ```bash
-~/.pi/agent/skills/figma/download-images.ts <fileKey> <outputDir> '<nodesJson>'
+{baseDir}/download-images.ts <fileKey> <outputDir> '<nodesJson>'
 ```
 
 **Parameters:**
@@ -99,8 +99,8 @@ Download images (PNG/SVG) from Figma nodes to a local directory.
 
 ```bash
 # Fetch a specific frame from a Figma file
-~/.pi/agent/skills/figma/get-data.ts ABC123def --node-id 1-234
+{baseDir}/get-data.ts ABC123def --node-id 1-234
 
 # Download images referenced in the design
-~/.pi/agent/skills/figma/download-images.ts ABC123def ./assets '[{"nodeId":"5:67","fileName":"logo.svg"},{"nodeId":"5:68","fileName":"bg.png"}]'
+{baseDir}/download-images.ts ABC123def ./assets '[{"nodeId":"5:67","fileName":"logo.svg"},{"nodeId":"5:68","fileName":"bg.png"}]'
 ```

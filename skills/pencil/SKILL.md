@@ -12,7 +12,7 @@ Interface with Pencil.app to read, create, and modify `.pen` design files. Penci
 ## Setup
 
 ```bash
-cd ~/.pi/agent/skills/pencil && npm install
+cd {baseDir} && npm install
 ```
 
 **Prerequisites:** Pencil.app must be running before using these tools.
@@ -38,7 +38,7 @@ cd ~/.pi/agent/skills/pencil && npm install
 Always begin by understanding what's currently open:
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts state
+{baseDir}/pencil.ts state
 ```
 
 This returns:
@@ -52,16 +52,16 @@ Search for components or read specific nodes:
 
 ```bash
 # List all reusable components (design system)
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen --patterns '[{"reusable": true}]' --read-depth 2
+{baseDir}/pencil.ts get --file ./design.pen --patterns '[{"reusable": true}]' --read-depth 2
 
 # Read specific nodes by ID
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen --node-ids '["nodeId1", "nodeId2"]'
+{baseDir}/pencil.ts get --file ./design.pen --node-ids '["nodeId1", "nodeId2"]'
 
 # Search for frames
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen --patterns '[{"type": "frame"}]'
+{baseDir}/pencil.ts get --file ./design.pen --patterns '[{"type": "frame"}]'
 
 # Get top-level document structure
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen
+{baseDir}/pencil.ts get --file ./design.pen
 ```
 
 ### 3. Make Design Changes
@@ -69,7 +69,7 @@ Search for components or read specific nodes:
 Use `batch_design` to execute operations. Operations use a script syntax:
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts design --file ./design.pen --operations '
+{baseDir}/pencil.ts design --file ./design.pen --operations '
 sidebar=I("parentId", {type: "ref", ref: "SidebarComp", width: 240})
 content=I("parentId", {type: "frame", layout: "vertical", gap: 16})
 header=I(content, {type: "text", content: "Dashboard", fontSize: 24})
@@ -98,7 +98,7 @@ header=I(content, {type: "text", content: "Dashboard", fontSize: 24})
 Always check your work with screenshots:
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts screenshot --file ./design.pen --node-id "frameId"
+{baseDir}/pencil.ts screenshot --file ./design.pen --node-id "frameId"
 ```
 
 Screenshots are saved to `/tmp/pencil-screenshot-*.png`.
@@ -110,8 +110,8 @@ Screenshots are saved to `/tmp/pencil-screenshot-*.png`.
 Get current editor context. Start here for any design task.
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts state
-~/.pi/agent/skills/pencil/pencil.ts state --include-schema true  # Include .pen schema
+{baseDir}/pencil.ts state
+{baseDir}/pencil.ts state --include-schema true  # Include .pen schema
 ```
 
 ### open (open_document)
@@ -119,8 +119,8 @@ Get current editor context. Start here for any design task.
 Open an existing file or create new:
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts open --file ./path/to/design.pen
-~/.pi/agent/skills/pencil/pencil.ts open --file new  # Create blank document
+{baseDir}/pencil.ts open --file ./path/to/design.pen
+{baseDir}/pencil.ts open --file new  # Create blank document
 ```
 
 ### get (batch_get)
@@ -129,21 +129,21 @@ Read and search nodes. Combine multiple searches in one call for efficiency.
 
 ```bash
 # Search patterns
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen \
+{baseDir}/pencil.ts get --file ./design.pen \
   --patterns '[{"reusable": true}, {"type": "text"}]'
 
 # Read by IDs
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen \
+{baseDir}/pencil.ts get --file ./design.pen \
   --node-ids '["id1", "id2", "id3"]'
 
 # Control depth
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen \
+{baseDir}/pencil.ts get --file ./design.pen \
   --patterns '[{"type": "frame"}]' \
   --read-depth 3 \
   --search-depth 5
 
 # Resolve component instances to see full structure
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen \
+{baseDir}/pencil.ts get --file ./design.pen \
   --node-ids '["instanceId"]' \
   --resolve-instances true
 ```
@@ -153,7 +153,7 @@ Read and search nodes. Combine multiple searches in one call for efficiency.
 Execute design operations. This is the main tool for making changes.
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts design --file ./design.pen --operations '
+{baseDir}/pencil.ts design --file ./design.pen --operations '
 # Create a card component instance
 card=I("container", {type: "ref", ref: "CardComp", width: "fill_container"})
 
@@ -188,7 +188,7 @@ card=I("parent", {type: "ref", ref: "CardComp", children: [{type: "text", conten
 Capture visual state for validation. **Always use this to verify your changes look correct.**
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts screenshot --file ./design.pen --node-id "frameId"
+{baseDir}/pencil.ts screenshot --file ./design.pen --node-id "frameId"
 # Output: [Screenshot saved to: /tmp/pencil-screenshot-1234567890.png]
 ```
 
@@ -197,8 +197,8 @@ Capture visual state for validation. **Always use this to verify your changes lo
 Check computed layout rectangles. Useful for positioning and debugging.
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts layout --file ./design.pen --max-depth 2
-~/.pi/agent/skills/pencil/pencil.ts layout --file ./design.pen --problems-only true
+{baseDir}/pencil.ts layout --file ./design.pen --max-depth 2
+{baseDir}/pencil.ts layout --file ./design.pen --problems-only true
 ```
 
 ### guidelines (get_guidelines)
@@ -206,11 +206,11 @@ Check computed layout rectangles. Useful for positioning and debugging.
 Get design rules for specific contexts:
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic code          # Code generation
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic table         # Tables/dashboards
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic tailwind      # Tailwind CSS
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic landing-page  # Marketing pages
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic design-system # Component usage
+{baseDir}/pencil.ts guidelines --topic code          # Code generation
+{baseDir}/pencil.ts guidelines --topic table         # Tables/dashboards
+{baseDir}/pencil.ts guidelines --topic tailwind      # Tailwind CSS
+{baseDir}/pencil.ts guidelines --topic landing-page  # Marketing pages
+{baseDir}/pencil.ts guidelines --topic design-system # Component usage
 ```
 
 ### style-tags & style-guide
@@ -219,13 +219,13 @@ Get design inspiration:
 
 ```bash
 # First, get available tags
-~/.pi/agent/skills/pencil/pencil.ts style-tags
+{baseDir}/pencil.ts style-tags
 
 # Then get a style guide with relevant tags
-~/.pi/agent/skills/pencil/pencil.ts style-guide --tags '["modern", "minimal", "webapp", "dashboard"]'
+{baseDir}/pencil.ts style-guide --tags '["modern", "minimal", "webapp", "dashboard"]'
 
 # Or by specific ID
-~/.pi/agent/skills/pencil/pencil.ts style-guide --id "style-guide-id"
+{baseDir}/pencil.ts style-guide --id "style-guide-id"
 ```
 
 ### variables (get_variables / set_variables)
@@ -234,10 +234,10 @@ Work with design tokens and themes:
 
 ```bash
 # Read current variables
-~/.pi/agent/skills/pencil/pencil.ts variables --file ./design.pen
+{baseDir}/pencil.ts variables --file ./design.pen
 
 # Update variables
-~/.pi/agent/skills/pencil/pencil.ts set_variables --file ./design.pen \
+{baseDir}/pencil.ts set_variables --file ./design.pen \
   --variables '{"primary": "#3B82F6", "spacing-md": 16}'
 ```
 
@@ -246,7 +246,7 @@ Work with design tokens and themes:
 Find empty area for new content:
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts find-space --file ./design.pen \
+{baseDir}/pencil.ts find-space --file ./design.pen \
   --width 400 --height 600 --padding 50 --direction right
 ```
 
@@ -256,12 +256,12 @@ Bulk property operations:
 
 ```bash
 # Find all unique colors used
-~/.pi/agent/skills/pencil/pencil.ts search-props --file ./design.pen \
+{baseDir}/pencil.ts search-props --file ./design.pen \
   --parents '["frameId"]' \
   --properties '["fillColor", "textColor"]'
 
 # Replace colors across design
-~/.pi/agent/skills/pencil/pencil.ts replace-props --file ./design.pen \
+{baseDir}/pencil.ts replace-props --file ./design.pen \
   --parents '["frameId"]' \
   --properties '{"fillColor": [{"from": "#old", "to": "#new"}]}'
 ```
@@ -272,39 +272,39 @@ Bulk property operations:
 
 ```bash
 # 1. Get state and available components
-~/.pi/agent/skills/pencil/pencil.ts state
-~/.pi/agent/skills/pencil/pencil.ts get --file ./app.pen --patterns '[{"reusable": true}]'
+{baseDir}/pencil.ts state
+{baseDir}/pencil.ts get --file ./app.pen --patterns '[{"reusable": true}]'
 
 # 2. Get style guide for inspiration
-~/.pi/agent/skills/pencil/pencil.ts style-tags
-~/.pi/agent/skills/pencil/pencil.ts style-guide --tags '["webapp", "dashboard", "modern"]'
+{baseDir}/pencil.ts style-tags
+{baseDir}/pencil.ts style-guide --tags '["webapp", "dashboard", "modern"]'
 
 # 3. Create the screen
-~/.pi/agent/skills/pencil/pencil.ts design --file ./app.pen --operations '
+{baseDir}/pencil.ts design --file ./app.pen --operations '
 screen=I(document, {type: "frame", name: "Dashboard", width: 1440, height: 900, layout: "horizontal"})
 sidebar=I(screen, {type: "ref", ref: "SidebarComp", width: 240, height: "fill_container"})
 main=I(screen, {type: "frame", layout: "vertical", gap: 24, padding: 32, width: "fill_container"})
 '
 
 # 4. Validate visually
-~/.pi/agent/skills/pencil/pencil.ts screenshot --file ./app.pen --node-id "screen-id"
+{baseDir}/pencil.ts screenshot --file ./app.pen --node-id "screen-id"
 ```
 
 ### Generate Code from Design
 
 ```bash
 # 1. Get code generation guidelines
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic code
-~/.pi/agent/skills/pencil/pencil.ts guidelines --topic tailwind
+{baseDir}/pencil.ts guidelines --topic code
+{baseDir}/pencil.ts guidelines --topic tailwind
 
 # 2. Read the design structure
-~/.pi/agent/skills/pencil/pencil.ts get --file ./design.pen \
+{baseDir}/pencil.ts get --file ./design.pen \
   --node-ids '["targetFrameId"]' \
   --read-depth 10 \
   --resolve-instances true
 
 # 3. Get design tokens
-~/.pi/agent/skills/pencil/pencil.ts variables --file ./design.pen
+{baseDir}/pencil.ts variables --file ./design.pen
 
 # 4. Generate code based on the structure and tokens
 ```
@@ -312,7 +312,7 @@ main=I(screen, {type: "frame", layout: "vertical", gap: 24, padding: 32, width: 
 ### Duplicate and Modify
 
 ```bash
-~/.pi/agent/skills/pencil/pencil.ts design --file ./design.pen --operations '
+{baseDir}/pencil.ts design --file ./design.pen --operations '
 # Copy a screen
 newScreen=C("originalScreenId", document, {name: "Screen V2", positionDirection: "right", positionPadding: 100})
 
