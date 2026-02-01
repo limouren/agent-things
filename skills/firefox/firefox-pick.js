@@ -1,36 +1,20 @@
 #!/usr/bin/env node
 
-import puppeteer from "puppeteer-core";
+import { connectOrExit as connect, activePage } from "./lib/connect.js";
 
 const message = process.argv.slice(2).join(" ");
 if (!message) {
-	console.log("Usage: browser-pick.js 'message'");
+	console.log("Usage: firefox-pick.js 'message'");
 	console.log("\nExample:");
-	console.log('  browser-pick.js "Click the submit button"');
+	console.log('  firefox-pick.js "Click the close button"');
 	process.exit(1);
 }
 
-const b = await Promise.race([
-	puppeteer.connect({
-		browserURL: "http://localhost:9222",
-		defaultViewport: null,
-	}),
-	new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-]).catch((e) => {
-	console.error("✗ Could not connect to browser:", e.message);
-	console.error("  Run: browser-start.js");
-	process.exit(1);
-});
-
-const p = (await b.pages()).at(-1);
-
-if (!p) {
-	console.error("✗ No active tab found");
-	process.exit(1);
-}
+const browser = await connect();
+const page = await activePage(browser);
 
 // Inject pick() helper into current page
-await p.evaluate(() => {
+await page.evaluate(() => {
 	if (!window.pick) {
 		window.pick = async (message) => {
 			if (!message) {
@@ -84,7 +68,7 @@ await p.evaluate(() => {
 					while (current && current !== document.body) {
 						const parentInfo = current.tagName.toLowerCase();
 						const id = current.id ? `#${current.id}` : "";
-						const cls = current.className
+						const cls = typeof current.className === "string" && current.className
 							? `.${current.className.trim().split(/\s+/).join(".")}`
 							: "";
 						parents.push(parentInfo + id + cls);
@@ -94,7 +78,7 @@ await p.evaluate(() => {
 					return {
 						tag: el.tagName.toLowerCase(),
 						id: el.id || null,
-						class: el.className || null,
+						class: (typeof el.className === "string" ? el.className : "") || null,
 						text: el.textContent?.trim().slice(0, 200) || null,
 						html: el.outerHTML.slice(0, 500),
 						parents: parents.join(" > "),
@@ -142,9 +126,11 @@ await p.evaluate(() => {
 	}
 });
 
-const result = await p.evaluate((msg) => window.pick(msg), message);
+const result = await page.evaluate((msg) => window.pick(msg), message);
 
-if (Array.isArray(result)) {
+if (result === null) {
+	console.log("(cancelled)");
+} else if (Array.isArray(result)) {
 	for (let i = 0; i < result.length; i++) {
 		if (i > 0) console.log("");
 		for (const [key, value] of Object.entries(result[i])) {
@@ -159,4 +145,4 @@ if (Array.isArray(result)) {
 	console.log(result);
 }
 
-await b.disconnect();
+await browser.disconnect();
