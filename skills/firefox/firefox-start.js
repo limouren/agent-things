@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
-import { spawn, execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { connect } from "./lib/connect.js";
+import { CACHE_DIR, findFirefox, syncProfile, disableSyncPrefs } from "./lib/firefox.js";
 
 const PORT = process.env.FIREFOX_BIDI_PORT || 9222;
-const CACHE_DIR = join(process.env.HOME, ".cache", "firefox-browser-tools");
 const PROFILE_DST = join(CACHE_DIR, "profile");
 
 if (process.argv[2] === "--help" || process.argv[2] === "-h") {
@@ -29,131 +28,23 @@ try {
 } catch {}
 
 // Find Firefox binary
-function findFirefox() {
-	const platform = process.platform;
-	if (platform === "darwin") {
-		const paths = [
-			"/Applications/Firefox.app/Contents/MacOS/firefox",
-			`${process.env.HOME}/Applications/Firefox.app/Contents/MacOS/firefox`,
-		];
-		for (const p of paths) {
-			if (existsSync(p)) return p;
-		}
-	} else if (platform === "linux") {
-		const paths = ["/usr/bin/firefox", "/usr/bin/firefox-esr", "/snap/bin/firefox"];
-		for (const p of paths) {
-			if (existsSync(p)) return p;
-		}
-		// Try which
-		try {
-			return execSync("which firefox", { encoding: "utf-8" }).trim();
-		} catch {}
-	} else if (platform === "win32") {
-		const paths = [
-			join(process.env.PROGRAMFILES || "", "Mozilla Firefox", "firefox.exe"),
-			join(process.env["PROGRAMFILES(X86)"] || "", "Mozilla Firefox", "firefox.exe"),
-			join(process.env.LOCALAPPDATA || "", "Mozilla Firefox", "firefox.exe"),
-		];
-		for (const p of paths) {
-			if (existsSync(p)) return p;
-		}
-	}
-	return null;
-}
-
 const firefoxBin = findFirefox();
 if (!firefoxBin) {
 	console.error("✗ Could not find Firefox. Install it or set the path manually.");
 	process.exit(1);
 }
 
-// Find and sync user profile
-function findDefaultProfile() {
-	const platform = process.platform;
-	let profilesDir;
-	if (platform === "darwin") {
-		profilesDir = join(process.env.HOME, "Library", "Application Support", "Firefox");
-	} else if (platform === "linux") {
-		profilesDir = join(process.env.HOME, ".mozilla", "firefox");
-	} else if (platform === "win32") {
-		profilesDir = join(process.env.APPDATA || "", "Mozilla", "Firefox");
-	}
-	if (!profilesDir) return null;
-
-	const iniPath = join(profilesDir, "profiles.ini");
-	if (!existsSync(iniPath)) return null;
-
-	const ini = readFileSync(iniPath, "utf-8");
-	// Find the Install* section's Default= (the actively used profile)
-	const installMatch = ini.match(/\[Install[^\]]*\][\s\S]*?Default=(.+)/);
-	if (installMatch) {
-		const rel = installMatch[1].trim();
-		const fullPath = join(profilesDir, rel);
-		if (existsSync(fullPath)) return fullPath;
-	}
-
-	// Fallback: find profile with Default=1
-	const sections = ini.split(/\[Profile\d+\]/);
-	for (const section of sections) {
-		if (section.includes("Default=1")) {
-			const pathMatch = section.match(/Path=(.+)/);
-			const isRelative = section.includes("IsRelative=1");
-			if (pathMatch) {
-				const p = pathMatch[1].trim();
-				return isRelative ? join(profilesDir, p) : p;
-			}
-		}
-	}
-	return null;
-}
-
-execSync(`mkdir -p "${PROFILE_DST}"`, { stdio: "ignore" });
-
-// Clean lock files
-try {
-	execSync(`rm -f "${PROFILE_DST}/.parentlock" "${PROFILE_DST}/lock"`, { stdio: "ignore" });
-} catch {}
-
+// Sync profile
 if (!skipProfile) {
-	const srcProfile = findDefaultProfile();
-	if (srcProfile) {
-		console.log(`Syncing profile from ${srcProfile}...`);
-		execSync(
-			`rsync -a --delete \
-				--exclude='.parentlock' \
-				--exclude='lock' \
-				--exclude='crashes' \
-				--exclude='datareporting' \
-				--exclude='cache2' \
-				--exclude='startupCache' \
-				--exclude='thumbnails' \
-				--exclude='safebrowsing' \
-				--exclude='sessionstore*' \
-				--exclude='sessionCheckpoints.json' \
-				--exclude='*.sqlite-wal' \
-				--exclude='*.sqlite-shm' \
-				--exclude='favicons.sqlite' \
-				"${srcProfile}/" "${PROFILE_DST}/"`,
-			{ stdio: "pipe" },
-		);
+	const { synced } = syncProfile(PROFILE_DST);
+	if (synced) {
+		console.log("Profile synced.");
 	} else {
 		console.log("⚠ Could not find Firefox profile, starting fresh.");
 	}
 }
 
-// Disable sync in the copied profile to avoid noisy errors
-const userJs = join(PROFILE_DST, "user.js");
-const syncPrefs = `
-user_pref("identity.fxaccounts.enabled", false);
-user_pref("datareporting.policy.dataSubmissionEnabled", false);
-user_pref("toolkit.telemetry.enabled", false);
-`;
-try {
-	const existing = existsSync(userJs) ? readFileSync(userJs, "utf-8") : "";
-	if (!existing.includes("identity.fxaccounts.enabled")) {
-		execSync(`cat >> "${userJs}" << 'PREFS'${syncPrefs}PREFS`, { stdio: "ignore" });
-	}
-} catch {}
+disableSyncPrefs(PROFILE_DST);
 
 // Start Firefox
 spawn(
