@@ -34,3 +34,13 @@ export async function activePage(browser) {
 	}
 	return page;
 }
+
+export async function withBrowser(fn) {
+	let browser;
+	try {
+		browser = await connectOrExit();
+		await fn(browser);
+	} finally {
+		await browser?.disconnect();
+	}
+}

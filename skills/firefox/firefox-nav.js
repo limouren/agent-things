@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { connectOrExit as connect } from "./lib/connect.js";
+import { withBrowser } from "./lib/connect.js";
 
 const url = process.argv[2];
 const newTab = process.argv[3] === "--new";
@@ -13,17 +13,15 @@ if (!url) {
 	process.exit(1);
 }
 
-const browser = await connect();
-
-if (newTab) {
-	const page = await browser.newPage();
-	await page.goto(url, { waitUntil: "domcontentloaded" });
-	console.log("✓ Opened:", url);
-} else {
-	const pages = await browser.pages();
-	const page = pages.at(-1);
-	await page.goto(url, { waitUntil: "domcontentloaded" });
-	console.log("✓ Navigated to:", url);
-}
-
-await browser.disconnect();
+await withBrowser(async (browser) => {
+	if (newTab) {
+		const page = await browser.newPage();
+		await page.goto(url, { waitUntil: "domcontentloaded" });
+		console.log("✓ Opened:", url);
+	} else {
+		const pages = await browser.pages();
+		const page = pages.at(-1);
+		await page.goto(url, { waitUntil: "domcontentloaded" });
+		console.log("✓ Navigated to:", url);
+	}
+});
