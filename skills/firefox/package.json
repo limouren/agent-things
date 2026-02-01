@@ -1,5 +1,5 @@
 {
-	"name": "firefox-browser-tools",
+	"name": "firefox",
 	"version": "1.0.0",
 	"type": "module",
 	"description": "Firefox browser automation via WebDriver BiDi",

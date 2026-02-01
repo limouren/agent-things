@@ -1,5 +1,5 @@
 ---
-name: firefox-browser-tools
+name: firefox
 description: Firefox browser automation via WebDriver BiDi. Use when you need to interact with web pages using Firefox, test frontends, or when user interaction with a visible browser is required.
 ---
 
@@ -12,7 +12,7 @@ Firefox WebDriver BiDi tools for agent-assisted web automation. These tools conn
 Run once before first use:
 
 ```bash
-cd {baseDir}/firefox-browser-tools
+cd {baseDir}
 npm install
 ```
 

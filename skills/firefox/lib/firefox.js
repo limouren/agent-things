@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const CACHE_DIR = join(process.env.HOME, ".cache", "firefox-browser-tools");
+export const CACHE_DIR = join(process.env.HOME, ".cache", "firefox-skill");
 
 export function findFirefox() {
 	const platform = process.platform;
