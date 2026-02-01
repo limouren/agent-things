@@ -27,7 +27,20 @@ export async function connectOrExit() {
 
 export async function activePage(browser) {
 	const pages = await browser.pages();
-	const page = pages.at(-1);
+	if (!pages.length) {
+		console.error("✗ No active tab found");
+		process.exit(1);
+	}
+
+	// Use BiDi getTree to find top-level browsing contexts (excludes iframes)
+	const tree = await browser.connection.send("browsingContext.getTree", {});
+	const topLevelIds = new Set(tree.result.contexts.map((c) => c.context));
+
+	const topLevelPages = pages.filter((p) =>
+		topLevelIds.has(p.mainFrame().browsingContext.id),
+	);
+
+	const page = topLevelPages.at(-1) || pages.at(-1);
 	if (!page) {
 		console.error("✗ No active tab found");
 		process.exit(1);
