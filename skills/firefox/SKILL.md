@@ -19,11 +19,12 @@ npm install
 ## Start Firefox
 
 ```bash
-{baseDir}/firefox-start.js              # Copy user's profile (cookies, logins)
-{baseDir}/firefox-start.js --no-profile # Fresh profile
+{baseDir}/firefox-start.js                  # Copy user's default profile (cookies, logins)
+{baseDir}/firefox-start.js --profile Work   # Copy a named profile (e.g. "Work")
+{baseDir}/firefox-start.js --no-profile     # Fresh profile
 ```
 
-Launch Firefox with WebDriver BiDi on `:9222`. By default, copies the user's profile to preserve authentication state. Use `--no-profile` for a clean session.
+Launch Firefox with WebDriver BiDi on `:9222`. By default, copies the user's default profile to preserve authentication state. Use `--profile <name>` to start with a specific named Firefox profile (as shown in `about:editprofile`). Use `--no-profile` for a clean session.
 
 ## Navigate
 
