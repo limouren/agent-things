@@ -13,19 +13,10 @@ Things here should work for any coding agents, but I primarily use [pi](https://
 
 | Skill                               | Description                                                   |
 | ----------------------------------- | ------------------------------------------------------------- |
-| [read-url](#read-url)               | Convert web pages to markdown                                 |
 | [doc-to-markdown](#doc-to-markdown) | Convert documents (PDF, DOCX, PPTX, XLSX, images) to markdown |
 | [figma](#figma)                     | Fetch Figma design data and images                            |
 | [pencil](#pencil)                   | Interface with Pencil.app for `.pen` design files             |
-| [browser-tools](#browser-tools)     | Chrome DevTools Protocol browser automation                   |
-
-### read-url
-
-Convert web pages to clean markdown using Jina Reader API.
-
-```bash
-ln -s "$(pwd)/skills/read-url" ~/.pi/agent/skills/
-```
+| [firefox](#firefox)                 | Firefox browser automation via WebDriver BiDi                 |
 
 ### doc-to-markdown
 
@@ -71,13 +62,13 @@ cd skills/pencil && npm install
 
 Requires Pencil.app to be running.
 
-### browser-tools
+### firefox
 
-Chrome DevTools Protocol tools for browser automation. Stolen from [badlogic/pi-skills](https://github.com/badlogic/pi-skills/tree/main/browser-tools).
+Firefox browser automation via WebDriver BiDi. Inspired by [browser-tools](https://github.com/badlogic/pi-skills/tree/main/browser-tools).
 
 ```bash
-ln -s "$(pwd)/skills/browser-tools" ~/.pi/agent/skills/
-cd skills/browser-tools && npm install
+ln -s "$(pwd)/skills/firefox" ~/.pi/agent/skills/
+cd skills/firefox && npm install
 ```
 
 ## Extensions
