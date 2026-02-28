@@ -79,6 +79,7 @@ Extensions for [pi](https://github.com/mariozechner/pi-coding-agent).
 | --------------------------------- | --------------------------------------------- |
 | [notify-on-idle](#notify-on-idle) | Desktop notifications when pi completes tasks |
 | [sandbox](#sandbox)               | OS-level sandboxing for bash commands         |
+| [usage](#usage)                   | Show Anthropic subscription usage limits      |
 
 ### notify-on-idle
 
@@ -108,4 +109,12 @@ Prerequisites:
 ```bash
 ln -s "$(pwd)/pi-extensions/sandbox" ~/.pi/agent/extensions/
 cd pi-extensions/sandbox && npm install
+```
+
+### usage
+
+Show Anthropic subscription usage limits (Pro/Max) as a themed bar chart via `/usage`. Reads OAuth credentials from pi's `auth.json`.
+
+```bash
+ln -s "$(pwd)/pi-extensions/usage.ts" ~/.pi/agent/extensions/
 ```
