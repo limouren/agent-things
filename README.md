@@ -11,27 +11,13 @@ Things here should work for any coding agents, but I primarily use [pi](https://
 
 ## Skills
 
-| Skill                               | Description                                                   |
-| ----------------------------------- | ------------------------------------------------------------- |
-| [doc-to-markdown](#doc-to-markdown) | Convert documents (PDF, DOCX, PPTX, XLSX, images) to markdown |
-| [figma](#figma)                     | Fetch Figma design data and images                            |
-| [pencil](#pencil)                   | Interface with Pencil.app for `.pen` design files             |
-| [firefox](#firefox)                 | Firefox browser automation via WebDriver BiDi                 |
-
-### doc-to-markdown
-
-Convert documents (PDF, DOCX, PPTX, XLSX, images) to markdown using [marker](https://github.com/datalab-to/marker).
-
-Prerequisites:
-
-- `pango` (macOS only, for XLSX support)
-
-```bash
-ln -s "$(pwd)/skills/doc-to-markdown" ~/.pi/agent/skills/
-cd skills/doc-to-markdown && uv sync
-```
-
-First run downloads ML models (~2GB).
+| Skill               | Description                                                        |
+| ------------------- | ------------------------------------------------------------------ |
+| [figma](#figma)     | Fetch Figma design data and images                                 |
+| [firefox](#firefox) | Firefox browser automation via WebDriver BiDi                      |
+| [ocr](#ocr)         | OCR images and PDFs to Markdown using Qwen3.5 VL (Apple Silicon)   |
+| [pandoc](#pandoc)   | Convert documents (DOCX, PPTX, ODT, EPUB, RTF) to Markdown        |
+| [pencil](#pencil)   | Interface with Pencil.app for `.pen` design files                  |
 
 ### figma
 
@@ -49,6 +35,35 @@ echo '{"apiKey": "figd_YOUR_KEY"}' > skills/figma/config.json
 
 Get an API key at: https://help.figma.com/hc/en-us/articles/8085703771159-Manage-personal-access-tokens
 
+### firefox
+
+Firefox browser automation via WebDriver BiDi. Inspired by [browser-tools](https://github.com/badlogic/pi-skills/tree/main/browser-tools).
+
+```bash
+ln -s "$(pwd)/skills/firefox" ~/.pi/agent/skills/
+cd skills/firefox && npm install
+```
+
+### ocr
+
+OCR images and PDFs to Markdown using [Qwen3.5 VL](https://huggingface.co/mlx-community/Qwen3.5-4B-MLX-4bit) via MLX. Best for scanned documents, photos, complex layouts, and CJK content.
+
+**Requires:** macOS Apple Silicon
+
+```bash
+ln -s "$(pwd)/skills/ocr" ~/.pi/agent/skills/
+bash skills/ocr/setup.sh  # downloads model (~2.5GB)
+```
+
+### pandoc
+
+Convert binary documents (DOCX, PPTX, ODT, ODP, EPUB, RTF) to Markdown using [pandoc](https://pandoc.org/).
+
+```bash
+ln -s "$(pwd)/skills/pandoc" ~/.pi/agent/skills/
+bash skills/pandoc/setup.sh  # downloads pandoc
+```
+
 ### pencil
 
 Interface with [Pencil.dev](https://www.pencil.dev/) to read, create, and modify `.pen` design files.
@@ -61,15 +76,6 @@ cd skills/pencil && npm install
 ```
 
 Requires Pencil.app to be running.
-
-### firefox
-
-Firefox browser automation via WebDriver BiDi. Inspired by [browser-tools](https://github.com/badlogic/pi-skills/tree/main/browser-tools).
-
-```bash
-ln -s "$(pwd)/skills/firefox" ~/.pi/agent/skills/
-cd skills/firefox && npm install
-```
 
 ## Extensions
 
