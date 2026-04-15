@@ -9,6 +9,19 @@ Things here should work for any coding agents, but I primarily use [pi](https://
 - [uv](https://github.com/astral-sh/uv)
 - [Node.js](https://nodejs.org/)
 
+## Agent instruction files
+
+This repo keeps my `AGENTS.md` under:
+
+- [`.meta/global/AGENTS.md`](.meta/global/AGENTS.md)
+
+To use this `AGENTS.md` for `pi` and Claude Code:
+
+```bash
+ln -sfn "$(pwd)/.meta/global/AGENTS.md" ~/.pi/agent/AGENTS.md
+ln -sfn "$(pwd)/.meta/global/AGENTS.md" ~/.claude/CLAUDE.md
+```
+
 ## Skills
 
 | Skill               | Description                                                        |
