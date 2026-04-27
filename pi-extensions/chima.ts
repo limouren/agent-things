@@ -3,8 +3,7 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 export default function chimaExtension(pi: ExtensionAPI) {
 	pi.on("before_agent_start", async (event) => {
 		const renamedPrompt = event.systemPrompt
-			.replaceAll(/\b[Pp]i\b/g, "Chima")
-			.replaceAll("pi-coding-agent", "chima-coding-agent");
+			.replaceAll(/(?<![\w.\/-])[Pp]i(?![\w.\/-])/g, "Chima");
 
 		return {
 			systemPrompt: `${renamedPrompt}
