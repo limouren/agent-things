@@ -5,7 +5,7 @@ description: Firefox browser automation via WebDriver BiDi. Use when you need to
 
 # Firefox Browser Tools
 
-Firefox WebDriver BiDi tools for agent-assisted web automation. These tools connect to Firefox running on `:9222` with remote debugging enabled.
+Interactive commands share one visible Firefox session. Content extraction uses a separate, automatically managed headless Firefox session.
 
 ## Setup
 
@@ -16,80 +16,73 @@ cd {baseDir}
 npm install
 ```
 
-## Start Firefox
+## Interactive Firefox
 
 ```bash
-{baseDir}/firefox-start.js                  # Copy user's default profile (cookies, logins)
-{baseDir}/firefox-start.js --profile Work   # Copy a named profile (e.g. "Work")
-{baseDir}/firefox-start.js --no-profile     # Fresh profile
+{baseDir}/firefox-start.js                  # Copy the default Firefox profile
+{baseDir}/firefox-start.js --profile Work   # Copy a named profile
+{baseDir}/firefox-start.js --no-profile     # Start with a clean profile
+{baseDir}/firefox-stop.js                   # Stop Firefox
 ```
 
-Launch Firefox with WebDriver BiDi on `:9222`. By default, copies the user's default profile to preserve authentication state. Use `--profile <name>` to start with a specific named Firefox profile (as shown in `about:editprofile`). Use `--no-profile` for a clean session.
+Firefox stays running and processes browser operations in order. Commands report an error if it has not been started.
 
-## Navigate
+### Navigate
 
 ```bash
 {baseDir}/firefox-nav.js https://example.com
 {baseDir}/firefox-nav.js https://example.com --new
 ```
 
-Navigate to URLs. Use `--new` flag to open in a new tab instead of reusing current tab.
-
-## Evaluate JavaScript
+### Evaluate JavaScript
 
 ```bash
 {baseDir}/firefox-eval.js 'document.title'
 {baseDir}/firefox-eval.js 'document.querySelectorAll("a").length'
 ```
 
-Execute JavaScript in the active tab. Code runs in async context. Use this to extract data, inspect page state, or perform DOM operations programmatically.
+Code runs in an async function in the active tab.
 
-## Screenshot
+### Screenshot
 
 ```bash
 {baseDir}/firefox-screenshot.js
 ```
 
-Capture current viewport and return temporary file path. Use this to visually inspect page state or verify UI changes.
+Prints the path to a temporary PNG screenshot of the active tab.
 
-## Cookies
+### Cookies
 
 ```bash
 {baseDir}/firefox-cookies.js
 ```
 
-Display all cookies for the current tab including domain, path, httpOnly, and secure flags. Use this to debug authentication issues or inspect session state.
-
-## Pick Elements
+### Pick Elements
 
 ```bash
 {baseDir}/firefox-pick.js 'Click the close button'
-{baseDir}/firefox-pick.js 'Select the upload area'
 ```
 
-Ask the user to click on element(s) in the Firefox window. Shows a highlight overlay and banner with instructions. Single click selects one element, Cmd/Ctrl+click to multi-select, Enter to finish, ESC to cancel. Returns element info (tag, id, class, text, html, parents). Use this when you need the user to identify which element to interact with.
+The user can click one element, Cmd/Ctrl+click several elements, press Enter to finish, or press Escape to cancel.
 
-## Upload Files
+### Upload a File
 
 ```bash
-{baseDir}/firefox-upload.js '/path/to/file'
+{baseDir}/firefox-upload.js /path/to/file
 ```
 
-Upload a file via the page's file input. Sets up a file chooser listener, clicks the "Upload Files" button, and accepts the file. Use this to upload files through file picker dialogs.
-
-## Extract Page Content
+## Headless Content Extraction
 
 ```bash
 {baseDir}/firefox-content.js https://example.com
 ```
 
-Navigate to a URL and extract readable content as markdown. Uses Mozilla Readability for article extraction and Turndown for HTML-to-markdown conversion. Works on pages with JavaScript content (waits for page to load).
+`firefox-content.js` automatically manages a dedicated headless Firefox. Requests share one Firefox process but use isolated browser contexts. Up to four requests run concurrently by default. Firefox closes and removes its private profile after 60 seconds without active work.
 
-## When to Use
+Configuration:
 
-- Testing frontend code in a real browser
-- Interacting with pages that require JavaScript
-- When user needs to visually see or interact with a page
-- Debugging authentication or session issues
-- Scraping dynamic content that requires JS execution
-- When Firefox-specific behavior is needed
+- `FIREFOX_CONTENT_CONCURRENCY`: maximum concurrent pages; default `4`
+- `FIREFOX_CONTENT_IDLE_MS`: idle shutdown delay; default `60000`
+- `FIREFOX_CONTENT_TIMEOUT_MS`: extraction timeout; default `60000`
+
+The visible and headless Firefox sessions are independent, so content extraction cannot affect interactive browsing.

@@ -176,24 +176,33 @@ export function syncProfile(destDir, srcProfileOverride = null) {
 
 	const srcProfile = srcProfileOverride || findDefaultProfile();
 	if (srcProfile) {
-		execSync(
-			`rsync -a --delete \
-				--exclude='.parentlock' \
-				--exclude='lock' \
-				--exclude='crashes' \
-				--exclude='datareporting' \
-				--exclude='cache2' \
-				--exclude='startupCache' \
-				--exclude='thumbnails' \
-				--exclude='safebrowsing' \
-				--exclude='sessionstore*' \
-				--exclude='sessionCheckpoints.json' \
-				--exclude='*.sqlite-wal' \
-				--exclude='*.sqlite-shm' \
-				--exclude='favicons.sqlite' \
-				"${srcProfile}/" "${destDir}/"`,
-			{ stdio: "pipe" },
-		);
+		try {
+			execSync(
+				`rsync -a --delete \
+					--exclude='.parentlock' \
+					--exclude='lock' \
+					--exclude='crashes' \
+					--exclude='datareporting' \
+					--exclude='cache2' \
+					--exclude='startupCache' \
+					--exclude='thumbnails' \
+					--exclude='safebrowsing' \
+					--exclude='sessionstore*' \
+					--exclude='sessionCheckpoints.json' \
+					--exclude='*.sqlite-wal' \
+					--exclude='*.sqlite-shm' \
+					--exclude='favicons.sqlite' \
+					"${srcProfile}/" "${destDir}/"`,
+				{ stdio: "pipe" },
+			);
+		} catch (err) {
+			// Exit code 23 = "Partial transfer due to vanished source files".
+			// This is expected when syncing a live Firefox profile since files
+			// (e.g. IDB temp files) can disappear mid-copy. Safe to ignore.
+			if (err.status !== 23) {
+				throw err;
+			}
+		}
 		return { profileDir: destDir, synced: true };
 	}
 	return { profileDir: destDir, synced: false };
