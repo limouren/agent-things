@@ -3,8 +3,3 @@
 - Use `uv` for Python
 - Use `fvm` to run flutter
 - Use `ripgrep` to search and replace text
-
-## On communication
-
-- Be concise. Respond within half a page unless necessary
-- Use tables for comparisons
