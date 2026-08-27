@@ -70,6 +70,7 @@ const profileName = option("--profile");
 const idleMs = positiveInteger(process.env.FIREFOX_CONTENT_IDLE_MS, 60_000);
 const contentConcurrency = positiveInteger(process.env.FIREFOX_CONTENT_CONCURRENCY, 4);
 const contentTimeoutMs = positiveInteger(process.env.FIREFOX_CONTENT_TIMEOUT_MS, 60_000);
+const maskWebDriver = process.env.FIREFOX_MASK_WEBDRIVER === "1";
 const socketPath = serviceSocketPath(kind);
 
 let browser;
@@ -145,7 +146,7 @@ async function dispatch(method, params) {
 		return handleContentRequest(params);
 	}
 
-	const job = interactiveQueue.then(() => handleInteractiveRequest(browser, method, params));
+	const job = interactiveQueue.then(() => handleInteractiveRequest(browser, method, params, { maskWebDriver }));
 	interactiveQueue = job.catch(() => {});
 	return job;
 }

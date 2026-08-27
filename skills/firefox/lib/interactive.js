@@ -13,6 +13,20 @@ async function evaluate(page, code) {
 	}, code);
 }
 
+async function installWebDriverMask(page) {
+	const mask = () => {
+		const descriptor = Object.getOwnPropertyDescriptor(Navigator.prototype, "webdriver");
+		if (!descriptor?.configurable) return;
+		Object.defineProperty(Navigator.prototype, "webdriver", {
+			...descriptor,
+			get: () => false,
+		});
+	};
+
+	await page.evaluateOnNewDocument(mask);
+	await page.evaluate(mask);
+}
+
 async function pickElements(page, message) {
 	await page.evaluate(() => {
 		window.__chimaPick = (prompt) => new Promise((resolve) => {
@@ -118,10 +132,11 @@ async function pickElements(page, message) {
 	return page.evaluate((prompt) => window.__chimaPick(prompt), message);
 }
 
-export async function handleInteractiveRequest(browser, method, params) {
+export async function handleInteractiveRequest(browser, method, params, options = {}) {
 	switch (method) {
 		case "navigate": {
 			const page = params.newTab ? await browser.newPage() : await activePage(browser);
+			if (options.maskWebDriver) await installWebDriverMask(page);
 			await page.goto(params.url, { waitUntil: "domcontentloaded", timeout: 30_000 });
 			return { url: page.url(), newTab: Boolean(params.newTab) };
 		}
