@@ -3,3 +3,5 @@
 - Use `uv` for Python
 - Use `fvm` to run flutter
 - Use `ripgrep` to search and replace text
+- Use ISO 24495-1–informed plain language when writing documents
+- Use STE-inspired procedural rules for instructions
