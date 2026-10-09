@@ -1,2 +1,5 @@
 .DS_Store
 node_modules/
+
+# Managed by `herdr integration install pi`
+pi-extensions/herdr-agent-state.ts
