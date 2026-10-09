@@ -75,6 +75,7 @@ const socketPath = serviceSocketPath(kind);
 
 let browser;
 let firefoxProc;
+let headless;
 let profileDir;
 let server;
 let shuttingDown = false;
@@ -132,6 +133,7 @@ async function dispatch(method, params) {
 			kind,
 			pid: process.pid,
 			firefoxPid: firefoxProc.pid,
+			headless,
 			activeRequests: kind === "content" ? activeContentRequests : undefined,
 		};
 	}
@@ -193,7 +195,7 @@ async function main() {
 	profileDir = kind === "content"
 		? await prepareContentProfile()
 		: await prepareInteractiveProfile({ noProfile, profileName });
-	({ browser, proc: firefoxProc } = await launchFirefox({
+	({ browser, proc: firefoxProc, headless } = await launchFirefox({
 		headless: kind === "content",
 		profileDir,
 	}));

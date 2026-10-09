@@ -27,6 +27,8 @@ npm install
 
 Firefox stays running and processes browser operations in order. Commands report an error if it has not been started.
 
+On Linux, the skill uses a native `firefox` first, then the Flatpak `org.mozilla.firefox`. If `DISPLAY` and `WAYLAND_DISPLAY` are both unset, the interactive Firefox starts headless, and `firefox-pick.js` cannot be used.
+
 ### Navigate
 
 ```bash

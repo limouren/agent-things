@@ -26,9 +26,10 @@ try {
 		...(profileName ? ["--profile", profileName] : []),
 	];
 	const status = await ensureFirefox("interactive", args);
+	const mode = status.headless ? " (headless: no display found)" : "";
 	console.log(status.started
-		? "✓ Firefox started"
-		: "✓ Firefox is already running");
+		? `✓ Firefox started${mode}`
+		: `✓ Firefox is already running${mode}`);
 } catch (error) {
 	console.error(`✗ ${error.message}`);
 	process.exitCode = 1;

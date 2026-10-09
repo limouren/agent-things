@@ -5,6 +5,17 @@ import Database from "better-sqlite3";
 
 export const CACHE_DIR = join(process.env.HOME, ".cache", "firefox-skill");
 
+const FLATPAK_APP_ID = "org.mozilla.firefox";
+
+function flatpakFirefoxIsInstalled() {
+	try {
+		execSync(`flatpak info --show-ref ${FLATPAK_APP_ID}`, { stdio: "ignore" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /**
  * Get the Firefox profiles directory for the current platform.
  */
@@ -13,9 +24,36 @@ export function getProfilesDir() {
 	if (platform === "darwin") {
 		return join(process.env.HOME, "Library", "Application Support", "Firefox");
 	} else if (platform === "linux") {
-		return join(process.env.HOME, ".mozilla", "firefox");
+		// Native Firefox first, then Flatpak. Newer Firefox uses the XDG config layout.
+		const home = process.env.HOME;
+		const flatpakHome = join(home, ".var", "app", FLATPAK_APP_ID);
+		const candidates = [
+			join(home, ".mozilla", "firefox"),
+			join(process.env.XDG_CONFIG_HOME || join(home, ".config"), "mozilla", "firefox"),
+			join(flatpakHome, "config", "mozilla", "firefox"),
+			join(flatpakHome, ".mozilla", "firefox"),
+		];
+		return candidates.find((dir) => existsSync(join(dir, "profiles.ini"))) || candidates[0];
 	} else if (platform === "win32") {
 		return join(process.env.APPDATA || "", "Mozilla", "Firefox");
+	}
+	return null;
+}
+
+/**
+ * Find a way to launch Firefox.
+ * Returns { command, args, flatpak } or null. `args` come before Firefox's own arguments.
+ */
+export function findFirefoxLauncher(profileDir) {
+	const firefoxBin = findFirefox();
+	if (firefoxBin) return { command: firefoxBin, args: [], flatpak: false };
+	if (process.platform === "linux" && flatpakFirefoxIsInstalled()) {
+		// The sandbox cannot see the copied profile unless we grant access to it.
+		return {
+			command: "flatpak",
+			args: ["run", `--filesystem=${profileDir}`, FLATPAK_APP_ID],
+			flatpak: true,
+		};
 	}
 	return null;
 }
@@ -36,7 +74,7 @@ export function findFirefox() {
 			if (existsSync(p)) return p;
 		}
 		try {
-			return execSync("which firefox", { encoding: "utf-8" }).trim();
+			return execSync("which firefox", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }).trim();
 		} catch {}
 	} else if (platform === "win32") {
 		const paths = [

@@ -7,7 +7,7 @@ import puppeteer from "puppeteer-core";
 import {
 	CACHE_DIR,
 	disableSyncPrefs,
-	findFirefox,
+	findFirefoxLauncher,
 	findProfileByName,
 	listProfileNames,
 	syncProfile,
@@ -53,18 +53,29 @@ export async function prepareContentProfile() {
 	return profileDir;
 }
 
+function hasDisplay() {
+	if (process.platform !== "linux") return true;
+	return Boolean(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+}
+
 export async function launchFirefox({ headless, profileDir }) {
-	const firefoxBin = findFirefox();
-	if (!firefoxBin) throw new Error("Could not find Firefox");
+	const launcher = findFirefoxLauncher(profileDir);
+	if (!launcher) throw new Error("Could not find Firefox (native or Flatpak org.mozilla.firefox)");
+
+	if (!headless && !hasDisplay()) {
+		console.error("⚠ No DISPLAY or WAYLAND_DISPLAY; starting Firefox headless");
+		headless = true;
+	}
 
 	const args = [
+		...launcher.args,
 		...(headless ? ["--headless"] : []),
 		"--no-remote",
 		"--remote-debugging-port=0",
 		"--profile",
 		profileDir,
 	];
-	const proc = spawn(firefoxBin, args, {
+	const proc = spawn(launcher.command, args, {
 		stdio: ["ignore", "pipe", "pipe"],
 		detached: true,
 	});
@@ -104,7 +115,7 @@ export async function launchFirefox({ headless, profileDir }) {
 			protocol: "webDriverBiDi",
 			defaultViewport: null,
 		});
-		return { browser, proc };
+		return { browser, proc, headless };
 	} catch (error) {
 		await stopFirefox({ proc });
 		throw error;
