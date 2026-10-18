@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Text, matchesKey } from "@mariozechner/pi-tui";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -6,6 +6,8 @@ import { join } from "node:path";
 const ANTHROPIC_USAGE_ENDPOINT = "https://api.anthropic.com/api/oauth/usage";
 const ANTHROPIC_BETA_HEADER = "oauth-2025-04-20";
 const OPENAI_USAGE_ENDPOINT = "https://chatgpt.com/backend-api/wham/usage";
+const CHATGPT_USAGE_PAGE = "https://chatgpt.com/settings/usage";
+const OPENAI_JWT_AUTH_CLAIM = "https://api.openai.com/auth";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -79,23 +81,35 @@ interface UsageSection {
 
 type UsageProvider = "anthropic" | "openai";
 
-interface AuthFile {
-  anthropic?: {
-    access?: string;
-    expires?: number;
-  };
-  "openai-codex"?: {
-    access?: string;
-    expires?: number;
-    accountId?: string;
-  };
+interface StoredCredential {
+  type?: "oauth" | "api_key" | string;
+  access?: string;
+  key?: string;
+  expires?: number;
+  accountId?: string;
 }
+
+type AuthFile = Record<string, StoredCredential | undefined>;
 
 interface ProviderAuth {
   token: string | null;
   expired: boolean;
   error: string | null;
   accountId?: string | null;
+}
+
+/**
+ * Pi auth.json keys that can hold a ChatGPT subscription credential.
+ * - `openai-codex`: legacy Codex login. Its token can read the usage endpoint.
+ * - `openai`: "Sign in with ChatGPT". Its token is scoped to api.openai.com
+ *   and the usage endpoint rejects it.
+ */
+type OpenAICredentialSource = "openai-codex" | "openai";
+const OPENAI_CREDENTIAL_SOURCES: OpenAICredentialSource[] = ["openai-codex", "openai"];
+
+interface OpenAICredentialCandidate {
+  source: OpenAICredentialSource;
+  auth: ProviderAuth;
 }
 
 interface ProviderFetchResult {
@@ -148,13 +162,19 @@ function formatUnixResetTime(resetAtSeconds: number): string {
 }
 
 function barColor(utilization: number): "success" | "warning" | "error" {
-  if (utilization > 80) return "error";
-  if (utilization > 50) return "warning";
+  if (utilization > 80) {
+    return "error";
+  }
+  if (utilization > 50) {
+    return "warning";
+  }
   return "success";
 }
 
 function titleCasePlan(plan: string | null | undefined): string | null {
-  if (!plan) return null;
+  if (!plan) {
+    return null;
+  }
   return plan
     .split("_")
     .filter(Boolean)
@@ -169,27 +189,68 @@ function formatDurationLabel(seconds: number, fallback: string): string {
     86400: "Daily limit",
     604800: "Weekly limit",
   };
-  if (known[seconds]) return known[seconds];
-  if (seconds % 604800 === 0) return `${seconds / 604800}w limit`;
-  if (seconds % 86400 === 0) return `${seconds / 86400}d limit`;
-  if (seconds % 3600 === 0) return `${seconds / 3600}h limit`;
+  if (known[seconds]) {
+    return known[seconds];
+  }
+  if (seconds % 604800 === 0) {
+    return `${seconds / 604800}w limit`;
+  }
+  if (seconds % 86400 === 0) {
+    return `${seconds / 86400}d limit`;
+  }
+  if (seconds % 3600 === 0) {
+    return `${seconds / 3600}h limit`;
+  }
   return fallback;
 }
 
 function formatCredits(balance: string | null | undefined): string | null {
-  if (balance === null || balance === undefined) return null;
+  if (balance === null || balance === undefined) {
+    return null;
+  }
   const n = Number(balance);
-  if (!Number.isFinite(n)) return balance;
-  if (n === 0) return null;
+  if (!Number.isFinite(n)) {
+    return balance;
+  }
+  if (n === 0) {
+    return null;
+  }
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
 }
 
 function normalizeUsageProvider(provider: string | null | undefined): UsageProvider | null {
-  if (!provider) return null;
+  if (!provider) {
+    return null;
+  }
   const normalized = provider.toLowerCase();
-  if (normalized === "anthropic") return "anthropic";
-  if (normalized === "openai-codex") return "openai";
+  if (normalized === "anthropic") {
+    return "anthropic";
+  }
+  if (normalized === "openai" || normalized === "openai-codex") {
+    return "openai";
+  }
   return null;
+}
+
+function decodeJwtPayload(token: string): Record<string, any> | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return null;
+  }
+  try {
+    return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function isJwt(token: string | null | undefined): token is string {
+  return !!token && decodeJwtPayload(token) !== null;
+}
+
+function extractChatGPTAccountId(token: string): string | null {
+  const accountId = decodeJwtPayload(token)?.[OPENAI_JWT_AUTH_CLAIM]?.chatgpt_account_id;
+  return typeof accountId === "string" && accountId.length > 0 ? accountId : null;
 }
 
 // ── Auth ───────────────────────────────────────────────────────
@@ -212,7 +273,9 @@ function readAuthFile(): { auth: AuthFile | null; error: string | null } {
 }
 
 function readAnthropicAuth(auth: AuthFile | null, authError: string | null): ProviderAuth {
-  if (!auth) return { token: null, expired: false, error: authError };
+  if (!auth) {
+    return { token: null, expired: false, error: authError };
+  }
   const anthropic = auth.anthropic;
   if (!anthropic?.access) {
     return { token: null, expired: false, error: "No Anthropic credentials found." };
@@ -224,18 +287,58 @@ function readAnthropicAuth(auth: AuthFile | null, authError: string | null): Pro
   };
 }
 
-function readOpenAIAuth(auth: AuthFile | null, authError: string | null): ProviderAuth {
-  if (!auth) return { token: null, expired: false, error: authError };
-  const openai = auth["openai-codex"];
-  if (!openai?.access) {
-    return { token: null, expired: false, error: "No OpenAI Codex credentials found." };
+/**
+ * Ask Pi for the provider token so expired OAuth tokens get refreshed.
+ * Fall back to the token stored in auth.json when Pi cannot resolve one.
+ */
+async function resolveFreshOAuthToken(ctx: ExtensionContext, providerId: string): Promise<string | null> {
+  try {
+    const token = await ctx.modelRegistry?.getApiKeyForProvider(providerId);
+    // Pi can return an API key (for example OPENAI_API_KEY) instead of the OAuth token.
+    return isJwt(token) ? token : null;
+  } catch {
+    return null;
   }
-  return {
-    token: openai.access,
-    expired: typeof openai.expires === "number" && openai.expires < Date.now(),
-    accountId: openai.accountId ?? null,
-    error: null,
-  };
+}
+
+async function readOpenAICandidates(
+  ctx: ExtensionContext,
+  auth: AuthFile | null,
+): Promise<OpenAICredentialCandidate[]> {
+  if (!auth) {
+    return [];
+  }
+
+  const candidates: OpenAICredentialCandidate[] = [];
+  for (const source of OPENAI_CREDENTIAL_SOURCES) {
+    const stored = auth[source];
+    if (stored?.type !== "oauth" || !stored.access) {
+      continue;
+    }
+
+    const freshToken = await resolveFreshOAuthToken(ctx, source);
+    const token = freshToken ?? stored.access;
+    candidates.push({
+      source,
+      auth: {
+        token,
+        expired: !freshToken && typeof stored.expires === "number" && stored.expires < Date.now(),
+        accountId: extractChatGPTAccountId(token) ?? stored.accountId ?? null,
+        error: null,
+      },
+    });
+  }
+  return candidates;
+}
+
+function describeMissingOpenAIAuth(auth: AuthFile | null, authError: string | null): string {
+  if (!auth) {
+    return authError || "Not logged in. Use /login to sign in.";
+  }
+  if (auth.openai?.type === "api_key") {
+    return "OpenAI API keys have no subscription usage limits. Use /login openai to sign in with ChatGPT.";
+  }
+  return "No ChatGPT subscription credentials found. Use /login openai to sign in with ChatGPT.";
 }
 
 // ── Data processing ────────────────────────────────────────────
@@ -245,7 +348,9 @@ function processAnthropicUsageData(data: AnthropicUsageResponse): UsageSection |
 
   for (const [key, label] of Object.entries(ANTHROPIC_BUCKET_LABELS)) {
     const bucket = data[key] as AnthropicUsageBucket | null | undefined;
-    if (!bucket || bucket.utilization === null || bucket.utilization === undefined) continue;
+    if (!bucket || bucket.utilization === null || bucket.utilization === undefined) {
+      continue;
+    }
     rows.push({
       label,
       utilization: bucket.utilization,
@@ -266,12 +371,16 @@ function processAnthropicUsageData(data: AnthropicUsageResponse): UsageSection |
     }
   }
 
-  if (rows.length === 0 && infoLines.length === 0) return null;
+  if (rows.length === 0 && infoLines.length === 0) {
+    return null;
+  }
   return { title: "Anthropic Usage", rows, infoLines };
 }
 
 function pushOpenAIWindow(rows: DisplayRow[], label: string, window: OpenAIUsageWindow | null | undefined) {
-  if (!window) return;
+  if (!window) {
+    return;
+  }
   rows.push({
     label,
     utilization: window.used_percent,
@@ -292,7 +401,9 @@ function processOpenAIUsageData(data: OpenAIUsageResponse): UsageSection | null 
   pushOpenAIWindow(rows, "Code review", data.code_review_rate_limit?.primary_window);
 
   for (const limit of data.additional_rate_limits ?? []) {
-    if (!limit?.rate_limit) continue;
+    if (!limit?.rate_limit) {
+      continue;
+    }
     const baseLabel = limit.limit_name || limit.metered_feature || "Additional limit";
     const primaryLabel = `${baseLabel} (${formatDurationLabel(limit.rate_limit.primary_window?.limit_window_seconds ?? 0, "primary")})`;
     const secondaryLabel = `${baseLabel} (${formatDurationLabel(limit.rate_limit.secondary_window?.limit_window_seconds ?? 0, "secondary")})`;
@@ -312,7 +423,9 @@ function processOpenAIUsageData(data: OpenAIUsageResponse): UsageSection | null 
     }
   }
 
-  if (rows.length === 0 && infoLines.length === 0) return null;
+  if (rows.length === 0 && infoLines.length === 0) {
+    return null;
+  }
   return { title: "OpenAI Usage", rows, infoLines };
 }
 
@@ -357,7 +470,21 @@ async function fetchAnthropicSection(auth: ProviderAuth): Promise<ProviderFetchR
   };
 }
 
-async function fetchOpenAISection(auth: ProviderAuth): Promise<ProviderFetchResult> {
+async function fetchOpenAISection(candidates: OpenAICredentialCandidate[]): Promise<ProviderFetchResult> {
+  const failures: string[] = [];
+  for (const candidate of candidates) {
+    const result = await fetchOpenAIUsage(candidate);
+    if (result.section) {
+      return result;
+    }
+    if (result.unavailableMessage) {
+      failures.push(result.unavailableMessage);
+    }
+  }
+  return { section: null, unavailableMessage: failures.join("\n"), warning: null };
+}
+
+async function fetchOpenAIUsage({ source, auth }: OpenAICredentialCandidate): Promise<ProviderFetchResult> {
   if (auth.error || !auth.token) {
     return { section: null, unavailableMessage: auth.error || "No OpenAI access token available.", warning: null };
   }
@@ -378,8 +505,18 @@ async function fetchOpenAISection(auth: ProviderAuth): Promise<ProviderFetchResu
       headers,
     });
 
+    if (res.status === 401 && source === "openai") {
+      return {
+        section: null,
+        unavailableMessage:
+          "OpenAI does not let \"Sign in with ChatGPT\" tokens read usage limits. " +
+          `See ${CHATGPT_USAGE_PAGE}, or run /login openai-codex to enable /usage.`,
+        warning: null,
+      };
+    }
+
     if (res.status === 401) {
-      return { section: null, unavailableMessage: "OpenAI Codex session expired. Run /login to re-authenticate.", warning: null };
+      return { section: null, unavailableMessage: "OpenAI Codex session expired. Run /login openai-codex to re-authenticate.", warning: null };
     }
 
     if (!res.ok) {
@@ -396,7 +533,7 @@ async function fetchOpenAISection(auth: ProviderAuth): Promise<ProviderFetchResu
   return {
     section,
     unavailableMessage: section ? null : "OpenAI Codex usage data is not available for this account.",
-    warning: auth.expired ? "OpenAI Codex OAuth token may be expired. Fetched successfully anyway." : null,
+    warning: auth.expired ? "OpenAI OAuth token may be expired. Fetched successfully anyway." : null,
   };
 }
 
@@ -478,8 +615,11 @@ export default function (pi: ExtensionAPI) {
         return;
       } else {
         const provider = normalizeUsageProvider(ctx.model?.provider);
-        if (provider) requestedProviders = [provider];
-        else requestedProviders = ["anthropic", "openai"];
+        if (provider) {
+          requestedProviders = [provider];
+        } else {
+          requestedProviders = ["anthropic", "openai"];
+        }
       }
 
       const { auth, error: authError } = readAuthFile();
@@ -488,14 +628,25 @@ export default function (pi: ExtensionAPI) {
           if (provider === "anthropic") {
             return [provider, await fetchAnthropicSection(readAnthropicAuth(auth, authError))] as const;
           }
-          return [provider, await fetchOpenAISection(readOpenAIAuth(auth, authError))] as const;
+          const candidates = await readOpenAICandidates(ctx, auth);
+          if (candidates.length === 0) {
+            const result: ProviderFetchResult = {
+              section: null,
+              unavailableMessage: describeMissingOpenAIAuth(auth, authError),
+              warning: null,
+            };
+            return [provider, result] as const;
+          }
+          return [provider, await fetchOpenAISection(candidates)] as const;
         }),
       );
 
       const resultMap = new Map<UsageProvider, ProviderFetchResult>(results);
       for (const provider of requestedProviders) {
         const result = resultMap.get(provider);
-        if (result?.warning) ctx.ui.notify(result.warning, "warning");
+        if (result?.warning) {
+          ctx.ui.notify(result.warning, "warning");
+        }
       }
 
       const sections = requestedProviders
@@ -516,7 +667,9 @@ export default function (pi: ExtensionAPI) {
           const lines: string[] = [];
 
           for (const [index, section] of sections.entries()) {
-            if (index > 0) lines.push("", "");
+            if (index > 0) {
+              lines.push("", "");
+            }
             lines.push(...renderInteractiveSection(theme, section));
           }
 
