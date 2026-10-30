@@ -13,6 +13,8 @@ from pathlib import Path
 
 AGENTS_MD = ".meta/global/AGENTS.md"
 JUDGE_PROMPT = Path(__file__).with_name("judge.md")
+MAX_LINE_WORDS = 20
+MAX_FILE_WORDS = 320
 
 
 def git(repo: Path, *args: str) -> str:
@@ -26,6 +28,15 @@ def changed_paths(repo: Path) -> set[str]:
 def discard_changes(repo: Path) -> None:
     git(repo, "reset", "--hard", "--quiet")
     git(repo, "clean", "-fd", "--quiet")
+
+
+def length_problems(agents_md: Path) -> list[str]:
+    lines = [line.removeprefix("- ") for line in agents_md.read_text().splitlines() if line.strip()]
+    problems = [f"{len(line.split())} words: {line}" for line in lines if len(line.split()) > MAX_LINE_WORDS]
+    total = sum(len(line.split()) for line in lines)
+    if total > MAX_FILE_WORDS:
+        problems.append(f"{total} words in the file")
+    return problems
 
 
 def push(repo: Path) -> None:
@@ -72,22 +83,34 @@ def judge(repo: Path, agent_things: Path, batch: list[dict], model: str) -> None
             f"- AGENTS.md: {agent_things / AGENTS_MD}",
             f"- decisions.jsonl: {repo / 'decisions.jsonl'}",
             f"- Commit message path: {message_path}",
+            f"- Word limits: {MAX_LINE_WORDS} words per line, {MAX_FILE_WORDS} words in AGENTS.md",
         ])
-        subprocess.run(
-            [
-                "pi", "-p", "--model", model, "--no-session", "--no-context-files",
-                "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-approve",
-                "--append-system-prompt", str(JUDGE_PROMPT), task,
-            ],
-            cwd=repo,
-            check=True,
-        )
+        try:
+            subprocess.run(
+                [
+                    "pi", "-p", "--model", model, "--no-session", "--no-context-files",
+                    "--no-extensions", "--no-skills", "--no-prompt-templates", "--no-approve",
+                    "--append-system-prompt", str(JUDGE_PROMPT), task,
+                ],
+                cwd=repo,
+                check=True,
+            )
+        except subprocess.CalledProcessError as error:
+            discard_changes(agent_things)
+            discard_changes(repo)
+            sys.exit(f"Judge failed with exit status {error.returncode}; discarded partial changes. Rerun to resume.")
 
         unexpected = (changed_paths(agent_things) - {AGENTS_MD}) | (changed_paths(repo) - {"decisions.jsonl"})
         if unexpected:
             discard_changes(agent_things)
             discard_changes(repo)
             sys.exit(f"Judge changed unexpected files: {sorted(unexpected)}")
+
+        too_long = length_problems(agent_things / AGENTS_MD)
+        if too_long:
+            discard_changes(agent_things)
+            discard_changes(repo)
+            sys.exit("Judge exceeded the AGENTS.md word limits:\n" + "\n".join(too_long))
 
         if changed_paths(agent_things):
             message = message_path.read_text() if message_path.exists() else "AGENTS.md: Update from taste review\n"

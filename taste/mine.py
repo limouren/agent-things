@@ -42,10 +42,15 @@ def excerpt(text: str) -> str:
 
 
 def project_of(cwd: str) -> str:
-    home = str(Path.home())
-    if not cwd.startswith(home):
+    if not cwd:
         return cwd
-    return cwd[len(home):].strip("/") or "~"
+    home = Path.home().resolve()
+    path = Path(cwd).resolve()
+    if path == home:
+        return "~"
+    if not path.is_relative_to(home):
+        return cwd
+    return str(path.relative_to(home))
 
 
 def read_session(path: Path, start: str, end: str):
