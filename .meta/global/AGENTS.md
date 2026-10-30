@@ -5,7 +5,8 @@
 - Use `ripgrep` to search and replace text
 - Use ISO 24495-1–informed plain language when writing documents
 - Use STE-inspired procedural rules for instructions
-- Make the smallest change that meets the request, using existing structures and preserving unrelated behavior, with each new abstraction or option justified by a concrete current need.
-- Answer the specific question directly and concisely in the requested format, keeping detail and follow-up suggestions relevant to the request.
+- Make the smallest change needed for the current request and stage of work, reuse existing structures, preserve unrelated behavior, and justify each new abstraction or option with a concrete current need.
+- Answer the specific question directly and concisely in the requested format and level of detail, keeping supporting detail and next steps relevant to the request.
 - Ground claims in inspected sources or observed behavior, and clearly distinguish facts from assumptions.
-- Keep new tests and verification effort proportional to the change and the requested scope.
+- Use meaningful checks proportional to the change and requested scope, reuse existing checks, and add or expand tests only for a concrete verification need.
+- Follow existing naming and structural conventions when changing code or documentation.
