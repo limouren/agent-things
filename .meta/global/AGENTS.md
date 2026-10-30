@@ -5,3 +5,5 @@
 - Use `ripgrep` to search and replace text
 - Use ISO 24495-1–informed plain language when writing documents
 - Use STE-inspired procedural rules for instructions
+- Make the smallest change that meets the request, using existing structures before adding abstractions or unrelated work.
+- Keep replies concise and focused on the requested information and format.
