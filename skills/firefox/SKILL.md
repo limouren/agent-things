@@ -48,10 +48,24 @@ Code runs in an async function in the active tab.
 ### Screenshot
 
 ```bash
-{baseDir}/firefox-screenshot.js
+{baseDir}/firefox-screenshot.js                        # Visible part of the active tab
+{baseDir}/firefox-screenshot.js --full-page            # Whole page
+{baseDir}/firefox-screenshot.js --selector '#main'     # One element
+{baseDir}/firefox-screenshot.js --path shot.png        # Save to a specific file
 ```
 
-Prints the path to a temporary PNG screenshot of the active tab.
+Prints the path to the PNG. Without `--path`, the file goes to the temporary directory. `--selector` fails if no element matches. `--selector` and `--full-page` cannot be used together.
+
+### Viewport
+
+```bash
+{baseDir}/firefox-viewport.js --width 390 --height 844 --dpr 3   # Phone-sized layout
+{baseDir}/firefox-viewport.js --reset                            # Restore the window size
+```
+
+Sets the layout size in CSS pixels and, optionally, the device pixel ratio of the active tab. The page lays out again, and media queries respond to the new size. Screenshots are the viewport size multiplied by the device pixel ratio.
+
+The setting stays on the active tab until you reset it. Tabs that you open later use the normal window size. Run `--reset` when you finish, because the user shares this browser.
 
 ### Cookies
 

@@ -142,11 +142,24 @@ export async function handleInteractiveRequest(browser, method, params, options 
 		}
 		case "evaluate":
 			return evaluate(await activePage(browser), params.code);
+		case "viewport": {
+			const page = await activePage(browser);
+			await page.setViewport(params.reset ? null : params);
+			return page.viewport();
+		}
 		case "screenshot": {
 			const page = await activePage(browser);
 			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-			const path = join(tmpdir(), `firefox-screenshot-${timestamp}.png`);
-			await page.screenshot({ path });
+			const path = params.path || join(tmpdir(), `firefox-screenshot-${timestamp}.png`);
+			if (params.selector) {
+				const element = await page.$(params.selector);
+				if (!element) {
+					throw new Error(`No element matches selector: ${params.selector}`);
+				}
+				await element.screenshot({ path });
+				return { path };
+			}
+			await page.screenshot({ path, fullPage: Boolean(params.fullPage) });
 			return { path };
 		}
 		case "cookies":
