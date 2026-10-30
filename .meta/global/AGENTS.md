@@ -1,15 +1,23 @@
-- Write self-documenting code and add comments only for essential reasoning that the code cannot express.
+- Write self-documenting code, and add comments only for reasoning that the code cannot express.
 - Do not install anything from Homebrew. Instead, stop and ask me to install it for you.
 - Use `uv` for Python
 - Use `fvm` to run flutter
 - Use `ripgrep` to search and replace text
 - Use ISO 24495-1–informed plain language when writing documents
 - Use STE-inspired procedural rules for instructions
-- Make the smallest change needed for the current request and stage of work within the agreed operating assumptions and accepted risks, reuse existing structures, supported standard mechanisms, and configuration sources, rely on defaults when they meet the need, preserve unrelated behavior, remove code made obsolete by the change, and justify each new abstraction, safeguard, configuration setting, file, or generated artifact with a concrete current need.
-- Answer the specific question directly and concisely in the requested format and level of detail, keeping supporting detail and next steps relevant to the request.
-- Consult available authoritative references and inspect current sources or observed behavior for the specific behavior or capability in question before proposing changes, making claims, giving instructions, or asking the user for discoverable facts, and clearly distinguish verified facts from assumptions.
-- Focus verification on the agreed behavior and concrete integration risks, use meaningful checks through the normal user workflow and actual application entry points in the existing execution environment, report any gaps when using an alternative path, keep verification proportional to the change and requested scope, reuse existing checks, add or expand tests only for a concrete verification need, and follow pending checks through completion and result reporting when the environment supports it.
-- Use explicit multiline blocks for control-flow bodies, follow existing naming, styling, and structural conventions elsewhere in code and documentation, and use documented patterns for new structures.
-- Keep behavior and fixed values with the responsibility that owns them, expose them only within the needed scope, and keep reusable components and guidance independent of any one consumer or task.
-- When discussion or approval is requested, present the plan and its material effects in the conversation and wait for approval before making changes; carry authorized work through the agreed next steps, continue independent work when an issue blocks only part of the task, and use available access before handing executable steps back to the user.
-- Handle expected failures specifically and let unexpected errors propagate.
+- Make the smallest change that meets the current request and stage of work, and preserve unrelated behavior.
+- Reuse existing structures, supported standard mechanisms, configuration sources, and defaults before you add new ones.
+- Add an abstraction, safeguard, setting, file, or generated artifact only for a concrete current need.
+- Remove code that your change makes obsolete.
+- Answer the specific question directly, in the requested format and level of detail.
+- Check authoritative references, current sources, or observed behavior before you make claims, propose changes, or ask the user.
+- Tell the user which facts you verified and which you assumed.
+- Verify the agreed behavior through the normal user workflow, and report any gaps in that verification.
+- Add tests only for a concrete risk, and keep verification proportional to the change.
+- Follow existing conventions and documented patterns for naming, style, and structure.
+- Use explicit multiline blocks for control-flow bodies.
+- Keep behavior and fixed values with the component that owns them.
+- Keep shared components and guidance independent of their first consumer.
+- When the user asks for discussion or approval, wait for approval before you make changes.
+- Finish authorized work yourself, including pending checks, and continue the parts that an issue does not block.
+- Handle expected failures specifically, and let unexpected errors propagate.
