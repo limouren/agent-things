@@ -11,3 +11,5 @@
 - Use meaningful checks through the actual application entry points in the existing execution environment, keep verification proportional to the change and requested scope, reuse existing checks, and add or expand tests only for a concrete verification need.
 - Follow existing naming, styling, and structural conventions in code and documentation, using documented patterns for new structures.
 - Keep behavior and fixed values with the responsibility that owns them, and expose them only within the needed scope.
+- When discussion or approval is requested, present the plan and its material effects in the conversation and wait for approval before making changes.
+- Handle expected failures specifically and let unexpected errors propagate.
