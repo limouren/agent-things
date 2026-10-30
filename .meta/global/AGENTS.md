@@ -8,5 +8,6 @@
 - Make the smallest change needed for the current request and stage of work, reuse existing structures, preserve unrelated behavior, and justify each new abstraction or option with a concrete current need.
 - Answer the specific question directly and concisely in the requested format and level of detail, keeping supporting detail and next steps relevant to the request.
 - Ground claims in inspected sources or observed behavior, and clearly distinguish facts from assumptions.
-- Use meaningful checks proportional to the change and requested scope, reuse existing checks, and add or expand tests only for a concrete verification need.
-- Follow existing naming and structural conventions when changing code or documentation.
+- Use meaningful checks through the actual application entry points in the existing execution environment, keep verification proportional to the change and requested scope, reuse existing checks, and add or expand tests only for a concrete verification need.
+- Follow existing naming, styling, and structural conventions in code and documentation, using documented patterns for new structures.
+- Keep behavior and fixed values with the responsibility that owns them, and expose them only within the needed scope.
